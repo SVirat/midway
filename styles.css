@@ -1027,6 +1027,59 @@ a {
   display: grid;
   grid-template-columns: 440px 1fr;
   border-top: 1px solid var(--border);
+  position: relative;
+}
+
+/* ---------- Full-width Loading Overlay ---------- */
+.results-loading-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(6px);
+  gap: 20px;
+}
+
+.results-loading-spinner {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: #6366F1;
+  border-right-color: #8B5CF6;
+  border-bottom-color: #EC4899;
+  animation: loadingSpin 0.9s linear infinite;
+  position: relative;
+}
+
+.results-loading-spinner::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: #EC4899;
+  border-right-color: #6366F1;
+  animation: loadingSpin 0.6s linear infinite reverse;
+}
+
+@keyframes loadingSpin {
+  to { transform: rotate(360deg); }
+}
+
+.results-loading-text {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: linear-gradient(90deg, #6366F1, #8B5CF6, #EC4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 0.3px;
 }
 
 .results-sidebar-inline {

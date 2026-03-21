@@ -876,6 +876,23 @@ function detectCategoryFromPrompt(prompt) {
 }
 
 // ---------- Find Sweet Spot ----------
+function showResultsLoading(message) {
+  var layout = document.querySelector('.results-layout-inline');
+  if (!layout) return;
+  // Remove any existing overlay
+  var existing = layout.querySelector('.results-loading-overlay');
+  if (existing) existing.remove();
+  var overlay = document.createElement('div');
+  overlay.className = 'results-loading-overlay';
+  overlay.innerHTML = '<div class="results-loading-spinner"></div><div class="results-loading-text">' + message + '</div>';
+  layout.appendChild(overlay);
+}
+
+function hideResultsLoading() {
+  var overlay = document.querySelector('.results-loading-overlay');
+  if (overlay) overlay.remove();
+}
+
 function updateFindButton() {
   const btn = document.getElementById('findBtn');
   btn.disabled = state.locations.length < 2;
@@ -979,10 +996,9 @@ function findSweetSpot() {
   }
 
   // Show loading indicators
-  document.getElementById('resultsSummary').innerHTML =
-    '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-spinner fa-spin"></i> Fetching real routes &amp; places...</div>';
-  document.getElementById('resultsList').innerHTML =
-    '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-spinner fa-spin"></i> Searching nearby venues...</div>';
+  document.getElementById('resultsSummary').innerHTML = '';
+  document.getElementById('resultsList').innerHTML = '';
+  showResultsLoading('Searching nearby venues...');
 
   setTimeout(() => {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -995,8 +1011,7 @@ function findSweetSpot() {
 
   const _doSearch = async function(aiKeywords) {
     // Step 2: Search for real places near center (with AI keywords if available)
-    document.getElementById('resultsList').innerHTML =
-      '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-spinner fa-spin"></i> Searching nearby venues...</div>';
+    showResultsLoading('Searching nearby venues...');
     const venues_raw = await searchNearbyPlaces(center, aiKeywords);
     if (!venues_raw || venues_raw.length === 0) {
       btn.disabled = false;
@@ -1007,8 +1022,7 @@ function findSweetSpot() {
     // Step 2.5: If AI prompt, fetch Google reviews and let AI filter by review content
     var venues = rankVenuesByMode(venues_raw);
     if (isFreeTextPrompt && venues.length > 0) {
-      document.getElementById('resultsList').innerHTML =
-        '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-wand-magic-sparkles fa-spin"></i> Reading reviews to match your vibe...</div>';
+      showResultsLoading('Reading reviews to match your vibe...');
       await fetchVenueReviews(venues);
       try {
         venues = await aiFilterByReviews(aiPromptText, venues);
@@ -1020,8 +1034,7 @@ function findSweetSpot() {
     // Step 3: Fetch real driving distances for top 5 venues (cached per origin/dest pair).
     venues = rankVenuesByMode(venues); // re-rank after possible AI filtering
     const top5 = venues.slice(0, 5);
-    document.getElementById('resultsList').innerHTML =
-      '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-spinner fa-spin"></i> Calculating real driving routes...</div>';
+    showResultsLoading('Calculating real driving routes...');
     await fetchAllVenueDistances(top5);
 
     // Step 4: Re-rank top 5 with real distances, append the rest (eco/fair mode only)
@@ -1050,6 +1063,7 @@ function findSweetSpot() {
     state._distanceData = distanceData;
 
     renderSummaryFromRoutes(destination, distanceData);
+    hideResultsLoading();
     renderVenueList();
     renderMap(destination, distanceData);
 
@@ -1077,8 +1091,7 @@ function findSweetSpot() {
 
   if (isFreeTextPrompt) {
     // AI prompt detected — extract smart keywords before searching
-    document.getElementById('resultsList').innerHTML =
-      '<div style="text-align:center;padding:24px;color:#9CA3AF;"><i class="fa-solid fa-wand-magic-sparkles fa-spin"></i> AI is understanding your vibe...</div>';
+    showResultsLoading('AI is understanding your vibe...');
     aiExtractKeywords(aiPromptText).then(function(aiKeywords) {
       _doSearch(aiKeywords); // aiKeywords is null if AI failed (falls back to simple keyword)
     });
