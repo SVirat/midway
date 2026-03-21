@@ -3,14 +3,15 @@
 **Version:** 1.0  
 **Last Updated:** March 21, 2026  
 **Author:** Virat Singh  
-**Live URL:** https://mway.vercel.app
+**Status:** 🟢 Live
+**Product Link:** https://mway.vercel.app
 
 ---
 
 ## 1. Overview
 
 ### 1.1 Problem Statement
-When a group of friends wants to meet, choosing a location is surprisingly hard. Everyone has different starting points, and the typical approach — "let's just meet at X" — often means one person drives 40 minutes while another walks 5. There's no easy tool that accounts for fairness, venue quality, and group preferences simultaneously.
+When a group of friends want to meet, choosing a location is surprisingly hard. Everyone has different starting points, and the typical approach — "let's just meet at X" — often means one person drives 40 minutes while another walks 5. There's no easy tool that accounts for fairness, venue quality, and group preferences simultaneously.
 
 ### 1.2 Solution
 Midway is a web app that calculates the optimal meeting spot for any group. Users enter their locations, pick a vibe or category, and Midway finds real venues near the geographic sweet spot — ranked by fairness or efficiency, with real driving distances and optional AI-powered vibe matching.
