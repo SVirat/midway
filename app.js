@@ -2635,4 +2635,17 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
   }
+
+  // Global Enter key triggers Find the Midway (unless in a location autocomplete input)
+  document.addEventListener('keydown', function(e) {
+    if (e.key !== 'Enter') return;
+    var active = document.activeElement;
+    // Skip if focused on a location autocomplete input (has data-id for Places Autocomplete)
+    if (active && active.matches('input[data-id]')) return;
+    var findBtn = document.getElementById('findBtn');
+    if (findBtn && !findBtn.disabled) {
+      e.preventDefault();
+      findBtn.click();
+    }
+  });
 });
