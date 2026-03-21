@@ -27,8 +27,10 @@ Midway helps groups of friends find the best place to meet. Enter everyone's sta
 - **Interactive Map** — Leaflet.js map with markers for people, venues, and routes
 
 ### Vibe Check
-- **Category Tabs** — Food, Play, Gigs — each with curated vibe tags (e.g. "Rooftop Bar", "Board Games Café")
+- **Category Tabs** — Food, Play, Gigs — each with curated vibe tags (e.g. "Rooftop Bar", "Court Sports", "Live Music")
 - **AI Vibe Ranking** — Describe what you want in plain English and an AI agent re-ranks venues to match (Gemini → OpenAI → Claude fallback chain)
+- **Smart Category Detection** — AI agent auto-detects the best category from your prompt (e.g. "badminton" → Play, "movie" → Gigs) and switches the toggle automatically
+- **Free-text Search** — When using the AI prompt, venues are found by keyword rather than fixed type, so niche searches (bowling, pickleball, escape rooms) work correctly
 - **No sign-in required** — AI features and all venue options are available to everyone
 
 ### Sharing
@@ -63,6 +65,7 @@ Midway helps groups of friends find the best place to meet. Enter everyone's sta
 | Places | Google Maps JavaScript API (Autocomplete, Nearby Search, Directions, Place Details, Geocoding) |
 | AI | Gemini 2.0 Flash, GPT-4o Mini, Claude Sonnet 4 (serverless cascade) |
 | Auth & DB | Supabase (PostgreSQL + Google OAuth + Row-Level Security + Realtime Presence) |
+| Security | Rate limiting (server + client), Supabase token auth on AI proxy |
 | Weather | Open-Meteo API |
 | Backend | Vercel Serverless Functions (Node.js) |
 | Deployment | Vercel |

@@ -48,15 +48,15 @@ Midway is a web app that calculates the optimal meeting spot for any group. User
 **Category Tabs:**
 | Category | Vibe Tags |
 |----------|-----------|
-| Food | Coffee, Brunch, Lunch, Dinner, Dessert, Drinks, Late Night, Healthy |
-| Play | Bowling, Arcade, Board Games, Mini Golf, Escape Room, Paintball |
-| Gigs | Live Music, Comedy, Theatre, Open Mic, DJ Night, Karaoke |
-
-**AI Agent Mode:**
+| Food | Cozy Café, Healthy, Rooftop Bar, Quiet Spot, Fast Food, Party |
+| Play | Sports, Court Sports, Bowling, Parks, Activities, Gaming, Adventure, Chill |
+| Gigs | Cinema, Comedy, Live Music, Theatre, Art & Culture, Events |
 - Free-text input: "great outdoor seating with tasty fries"
 - Sends prompt to serverless AI endpoint
 - AI re-ranks venue results based on the description
 - Provider cascade: Gemini 2.0 Flash → GPT-4o Mini → Claude Sonnet 4
+- **Smart Category Detection** — Automatically detects the best category (Food/Play/Gigs) from the user's prompt using keyword matching (e.g. "badminton" → Play, "movie tonight" → Gigs) and switches the toggle; if no match, keeps the current selection
+- **Free-text keyword search** — When the prompt doesn't match a predefined vibe tag, search uses keyword-only mode (no type restriction) so niche searches like "bowling", "pickleball", or "escape room" return relevant venues
 - Available to all users without sign-in
 
 ### 2.3 Mode Toggle
@@ -268,6 +268,9 @@ Examples: `mode_toggle`, `vibe_select`, `venues_shown`, `venue_selected`, `share
 - Row-Level Security on all Supabase tables
 - Input validation on all API endpoints (prompt length, URL format)
 - SSRF protection on link resolver (only Google Maps domains allowed)
+- **AI proxy authentication** — Client sends Supabase access token; server verifies via Supabase `/auth/v1/user` endpoint
+- **Server-side rate limiting** — Sliding window on `/api/ai-rank`: 5 req/min anonymous, 20 req/min authenticated (per IP)
+- **Client-side Google Maps rate limiting** — Per-service sliding window caps: geocode 30/min, nearby search 10/min, directions 30/min, place details 10/min; exceeded calls gracefully fallback (haversine, fallback venues, toasts)
 
 ### 7.4 Privacy
 - Geolocation is opt-in (user must click button)
