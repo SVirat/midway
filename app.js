@@ -1815,7 +1815,7 @@ function getShareMessage() {
   if (v && v.placeId) msg += ' (https://www.google.com/maps/place/?q=place_id:' + encodeURIComponent(v.placeId) + ')';
   if (v && v.address) msg += '\n📍 ' + v.address;
   if (v && v.rating) msg += '\n⭐ ' + v.rating + (v.userRatingsTotal ? ' (' + v.userRatingsTotal + ' reviews)' : '');
-  msg += '\n\nFound with Midway: mway.vercel.app';
+  msg += '\n\nFound with Midway: https://mway.vercel.app';
   return msg;
 }
 
