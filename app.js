@@ -581,6 +581,12 @@ function showYouHint() {
   }, 4000);
 }
 
+function isDefaultName(name) {
+  if (!name) return true;
+  if (name === 'You' || name === 'Person') return true;
+  return /^Friend\s*\d*$/.test(name);
+}
+
 function getPersonName(id) {
   const row = document.querySelector('.location-row[data-id="' + id + '"]');
   if (row) {
@@ -605,10 +611,11 @@ function savePersonName(id, input) {
   const newName = input.value.trim() || 'Person';
   input.value = newName;
 
-  // Update avatar initials
+  // Update avatar initials and hover title
   const row = input.closest('.location-row');
   const avatar = row.querySelector('.person-avatar');
   avatar.textContent = newName.charAt(0).toUpperCase();
+  avatar.title = isDefaultName(newName) ? 'Click to rename' : newName;
 
   // Update placeholder
   const locInput = row.querySelector('input[data-id]');
@@ -2106,8 +2113,11 @@ function renderGroupMembers() {
       var locationText = person.address || 'Waiting for location...';
       var statusClass = person.address ? 'remote-set' : 'remote-waiting';
 
+      var personName = person.name || 'Friend';
+      var avatarTitle = isDefaultName(personName) ? '' : personName;
+
       row.innerHTML =
-        '<div class="person-avatar" style="background:' + color + '">' + initials + '</div>' +
+        '<div class="person-avatar" style="background:' + color + '"' + (avatarTitle ? ' title="' + avatarTitle.replace(/"/g, '&quot;') + '"' : '') + '>' + initials + '</div>' +
         '<input type="text" value="' + locationText.replace(/"/g, '&quot;') + '" disabled class="' + statusClass + '" />' +
         '<span class="remote-badge"><i class="fa-solid fa-wifi"></i> Live</span>';
 
