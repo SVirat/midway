@@ -29,10 +29,12 @@ create table if not exists public.saved_locations (
   created_at timestamptz default now()
 );
 
--- 3. Search history (every "Find the Sweet Spot" click)
+-- 3. Search history (every "Find the Sweet Spot" click, anonymous + signed-in)
 create table if not exists public.search_history (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references public.profiles(id) on delete cascade not null,
+  session_id text,
+  anon_id text,
+  user_id uuid references public.profiles(id) on delete set null,
   mode text,
   vibe text,
   ai_prompt text,
@@ -166,6 +168,9 @@ do $$ begin
   if not exists (select 1 from pg_policies where policyname = 'Users manage own search history' and tablename = 'search_history') then
     create policy "Users manage own search history" on public.search_history for all using (auth.uid() = user_id);
   end if;
+  if not exists (select 1 from pg_policies where policyname = 'Anyone can insert search history' and tablename = 'search_history') then
+    create policy "Anyone can insert search history" on public.search_history for insert with check (true);
+  end if;
 
   -- Venue interactions
   if not exists (select 1 from pg_policies where policyname = 'Users manage own venue interactions' and tablename = 'venue_interactions') then
@@ -290,6 +295,7 @@ end $$;
 -- ============================================
 create index if not exists idx_saved_locations_user on public.saved_locations(user_id);
 create index if not exists idx_search_history_user on public.search_history(user_id, created_at desc);
+create index if not exists idx_search_history_anon on public.search_history(anon_id, created_at desc);
 create index if not exists idx_venue_interactions_user on public.venue_interactions(user_id, created_at desc);
 create index if not exists idx_activity_logs_user on public.activity_logs(user_id, created_at desc);
 

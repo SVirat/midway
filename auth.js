@@ -336,10 +336,12 @@ async function isVenueFavorited(placeId) {
 
 // ---------- Search History ----------
 async function logSearch(mode, vibe, aiPrompt, locations, meetingTime) {
-  if (!_supabaseClient || !currentUser) return;
+  if (!_supabaseClient) return;
 
   const { error } = await _supabaseClient.from('search_history').insert({
-    user_id: currentUser.id,
+    session_id: _getSessionId(),
+    anon_id: _getOrCreateAnonId(),
+    user_id: currentUser ? currentUser.id : null,
     mode: mode,
     vibe: vibe || null,
     ai_prompt: aiPrompt || null,
