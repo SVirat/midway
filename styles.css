@@ -2567,6 +2567,14 @@ a {
   padding: 8px 12px;
   cursor: pointer;
   border-top: 1px solid #f0f0f0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.pac-item-query {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
 }
 
 .pac-item:first-child {
