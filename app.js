@@ -1844,7 +1844,7 @@ function copyShareMessage() {
 }
 
 function copyInviteLink() {
-  const link = 'mway.vercel.app/join/' + state.sessionId;
+  const link = 'mway.vercel.app';
   navigator.clipboard.writeText(link).then(function() { showToast('Invite link copied! Share it with your friends.'); });
 }
 
