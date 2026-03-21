@@ -721,6 +721,7 @@ function renderVibeTags() {
   container.innerHTML = html;
 }
 
+var _vibeCheckTimer = null;
 function runVibeCheck() {
   const val = document.getElementById('vibeInput').value.trim();
   if (val) {
@@ -737,7 +738,13 @@ function runVibeCheck() {
       renderVibeTags();
     }
 
-    trackEvent('ai_prompt_input', { prompt: val, category: state.category });
+    // Debounce analytics to avoid firing on every keystroke
+    clearTimeout(_vibeCheckTimer);
+    _vibeCheckTimer = setTimeout(function() {
+      trackEvent('ai_prompt_input', { prompt: val, category: state.category });
+    }, 800);
+  } else {
+    state.vibe = '';
   }
 }
 
@@ -840,6 +847,15 @@ function findSweetSpot() {
 
   // Log search to Supabase
   const aiPrompt = document.getElementById('vibeInput').value.trim();
+
+  // Ensure state.vibe is set from the input (onchange/oninput may not have fired on iOS/Windows)
+  if (aiPrompt && !state.vibe) {
+    state.vibe = aiPrompt;
+  }
+
+  if (aiPrompt) {
+    trackEvent('ai_prompt_input', { prompt: aiPrompt, category: state.category });
+  }
   logSearch(state.mode, state.vibe, aiPrompt, state.locations, state.meetingTime);
   trackEvent('find_sweet_spot', {
     mode: state.mode,
