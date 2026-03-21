@@ -1,6 +1,6 @@
 {
   "buildCommand": "node setup.js",
-  "outputDirectory": ".",
+  "framework": null,
   "rewrites": [
     { "source": "/api/ai-rank", "destination": "/api/ai-rank" },
     { "source": "/api/resolve-map-link", "destination": "/api/resolve-map-link" }
