@@ -76,6 +76,7 @@ body {
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   font-weight: 400;
+  -webkit-tap-highlight-color: transparent;
 }
 
 a {
@@ -177,6 +178,7 @@ a {
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .btn-sm {
@@ -521,7 +523,7 @@ a {
   margin-top: var(--space-md);
   width: 100%;
   justify-content: center;
-  border-style: dashed;
+  border-style: solid;
 }
 
 .invite-bar {
@@ -610,6 +612,7 @@ a {
   align-items: center;
   justify-content: center;
   gap: 5px;
+  touch-action: manipulation;
 }
 
 .category-btn:hover {
@@ -705,6 +708,7 @@ a {
   cursor: pointer;
   transition: all 0.15s;
   font-family: var(--font-body);
+  touch-action: manipulation;
 }
 
 .vibe-tag:hover {
@@ -1045,6 +1049,7 @@ a {
   display: flex;
   gap: var(--space-md);
   align-items: center;
+  touch-action: manipulation;
 }
 
 .venue-photo {
@@ -1165,6 +1170,7 @@ a {
   transition: all 0.15s;
   font-family: var(--font-body);
   white-space: nowrap;
+  touch-action: manipulation;
 }
 
 .sort-btn:hover {
@@ -1820,6 +1826,8 @@ a {
 /* ========================================
    RESPONSIVE
    ======================================== */
+
+/* --- Tablet and below (≤900px) --- */
 @media (max-width: 900px) {
   .results-layout-inline {
     grid-template-columns: 1fr;
@@ -1838,21 +1846,547 @@ a {
   }
 }
 
+/* --- Mobile (≤600px) — primary phone breakpoint --- */
 @media (max-width: 600px) {
+
+  /* Safe-area insets for notched phones */
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* --- Navbar --- */
+  .navbar {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .logo-text {
+    font-size: 1rem;
+  }
+
+  #shareBtn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  #shareBtn .fa-share-nodes + span,
+  #shareBtn::after {
+    content: none;
+  }
+
+  /* Google Places autocomplete dropdown — wider tap targets on mobile */
+  .pac-container {
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .pac-item {
+    padding: 12px 14px;
+    font-size: 0.88rem;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .pac-icon {
+    margin-right: 10px;
+  }
+
+  /* --- Setup Container --- */
   .setup-container {
     padding: 0 var(--space-md);
+    margin-top: var(--space-md);
+  }
+
+  .setup-header {
+    margin-bottom: var(--space-md);
+  }
+
+  .setup-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .setup-header p {
+    font-size: 0.84rem;
+    max-width: 260px;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .setup-columns {
     grid-template-columns: 1fr;
+    gap: var(--space-md);
+  }
+
+  /* --- Location Panel --- */
+  .locations-panel {
+    padding: var(--space-md);
+  }
+
+  .location-row {
+    gap: 6px;
+  }
+
+  /* Bigger touch target for person avatar */
+  .location-row .person-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 0.7rem;
+  }
+
+  /* Address input: 16px font prevents iOS auto-zoom on focus */
+  .location-row input {
+    padding: 12px 12px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .location-row .name-input {
+    width: 64px;
+    padding: 8px 6px !important;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  /* Touch-safe remove button */
+  .location-row .btn-remove {
+    width: 44px;
+    height: 44px;
+    font-size: 0.9rem;
+  }
+
+  /* Touch-safe geolocate button */
+  .btn-geolocate {
+    width: 44px;
+    height: 44px;
+    font-size: 0.88rem;
+  }
+
+  /* Touch-safe save/friend buttons */
+  .btn-save-loc,
+  .btn-save-friend {
+    width: 36px;
+    height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .btn-add-location {
+    padding: 12px;
+    font-size: 0.85rem;
+    min-height: 44px;
+    border-width: 2px;
+  }
+
+  .invite-bar .btn {
+    font-size: 0.8rem;
+    padding: 10px 14px;
+    min-height: 44px;
+  }
+
+  /* --- Vibe Panel --- */
+  .vibe-panel {
+    padding: var(--space-md);
+  }
+
+  .category-toggle {
+    gap: 4px;
+    padding: 3px;
+  }
+
+  .category-btn {
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    min-height: 44px;
+  }
+
+  /* Bigger vibe tags for touch */
+  .vibe-tag {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .vibe-tags {
+    gap: 8px;
+  }
+
+  .ai-prompt-input {
+    padding: 12px 14px;
+    font-size: 16px;
+    min-height: 44px;
+  }
+
+  .ai-prompt-label {
+    font-size: 0.8rem;
+  }
+
+  /* --- Mode Toggle --- */
+  .mode-toggle-container {
+    flex-direction: column;
+    gap: var(--space-xs);
   }
 
   .toggle-track {
-    width: 260px;
+    width: 220px;
+  }
+
+  .toggle-option {
+    padding: 8px 0;
+    font-size: 0.78rem;
+  }
+
+  .mode-description {
+    font-size: 0.72rem;
+    text-align: center;
+  }
+
+  /* --- Find Button --- */
+  .btn-find {
+    padding: 16px;
+    font-size: 0.95rem;
+    min-height: 52px;
+    border-radius: var(--radius-lg);
+  }
+
+  /* --- More Options --- */
+  .more-options-toggle {
+    font-size: 0.85rem;
+    padding: 8px 0;
+    min-height: 44px;
+  }
+
+  .custom-picker {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    min-height: 44px;
+  }
+
+  .meeting-time-inputs {
+    flex-wrap: wrap;
+  }
+
+  /* --- Results Section --- */
+  .results-section {
+    margin-top: var(--space-md);
+  }
+
+  .results-top-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .results-top-header h3 {
+    font-size: 1rem;
+  }
+
+  /* On mobile, show map first, then list */
+  .results-layout-inline {
+    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .results-sidebar-inline {
+    border-right: none;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+    max-height: none;
+    overflow-y: visible;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .results-map-container-inline #map {
+    min-height: 280px;
+    height: 45vh;
+  }
+
+  /* Venue cards — more touch-friendly */
+  .venue-card {
+    padding: var(--space-md);
+    gap: var(--space-sm);
+    min-height: 64px;
+  }
+
+  .venue-photo,
+  .venue-photo-placeholder {
+    width: 48px;
+    height: 48px;
+  }
+
+  .venue-name {
+    font-size: 0.88rem;
+  }
+
+  .venue-type {
+    font-size: 0.75rem;
+  }
+
+  .venue-meta {
+    font-size: 0.75rem;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+  }
+
+  .venue-rank {
+    width: 26px;
+    height: 26px;
+    font-size: 0.72rem;
+  }
+
+  .venue-actions {
+    gap: 6px;
+  }
+
+  .venue-actions .btn-tiny {
+    font-size: 0.72rem;
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  /* Sort bar — horizontal scroll */
+  .sort-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 6px;
+    padding-bottom: var(--space-sm);
+  }
+
+  .sort-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .sort-btn {
+    font-size: 0.72rem;
+    padding: 6px 14px;
+    min-height: 32px;
+  }
+
+  /* Find More Options button */
+  .btn-find-more {
+    padding: 14px 16px;
+    font-size: 0.88rem;
+    min-height: 48px;
+  }
+
+  /* --- Summary --- */
+  .results-summary-bar {
+    padding: 0 var(--space-md) var(--space-sm);
+  }
+
+  .results-summary {
+    padding: var(--space-sm) var(--space-sm);
+  }
+
+  .summary-horizontal {
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+
+  .summary-table {
+    font-size: 0.72rem;
+    width: 100%;
+  }
+
+  .summary-table th {
+    font-size: 0.65rem;
+    padding: 2px 8px 4px 0;
+  }
+
+  .summary-table td {
+    padding: 4px 8px 4px 0;
+  }
+
+  .summary-averages {
+    flex-direction: row;
+    gap: var(--space-md);
+    justify-content: center;
+  }
+
+  .summary-hero-badge {
+    max-width: 280px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  /* --- Share Modal --- */
+  .modal {
+    padding: var(--space-lg);
+    width: 95%;
+    max-height: 90vh;
+    overflow-y: auto;
   }
 
   .share-buttons {
     flex-direction: column;
+  }
+
+  .btn-share {
+    min-height: 48px;
+    font-size: 0.88rem;
+  }
+
+  .fairness-card-preview .fc-hero {
+    flex-direction: column;
+  }
+
+  .fairness-card-preview .fc-photo {
+    width: 100%;
+    min-height: 140px;
+  }
+
+  .fairness-card-preview .fc-hero-info {
+    padding: var(--space-md);
+  }
+
+  .fairness-card-preview .fc-stats {
+    padding: var(--space-sm) var(--space-md);
+    gap: var(--space-sm);
+  }
+
+  .fairness-card-preview .fc-stat-val {
+    font-size: 0.82rem;
+  }
+
+  .fairness-card-preview .fc-stat-label {
+    font-size: 0.62rem;
+  }
+
+  /* --- Side Panel (full-width on mobile) --- */
+  .side-panel {
+    width: 100%;
+    right: -100%;
+  }
+
+  .side-panel-header {
+    padding: var(--space-md);
+    padding-top: calc(var(--space-md) + env(safe-area-inset-top));
+  }
+
+  .side-panel-body {
+    padding: var(--space-md);
+    padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+  }
+
+  .sp-card {
+    padding: var(--space-sm) var(--space-md);
+    min-height: 48px;
+  }
+
+  .sp-card-actions .btn-tiny {
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  /* --- Toast --- */
+  .toast {
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    left: var(--space-md);
+    right: var(--space-md);
+    transform: translateY(100px);
+    text-align: center;
+    font-size: 0.85rem;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+  }
+
+  /* --- Auth --- */
+  .btn-google-signin {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .user-avatar-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .user-dropdown {
+    right: -8px;
+    min-width: 220px;
+  }
+
+  /* Shrink emojis in toggle & badge */
+  .toggle-option,
+  .results-mode-badge {
+    font-size: 0.72rem;
+  }
+
+  /* Shrink heart emoji in footer */
+  .site-footer .heart {
+    font-size: 0.7rem;
+  }
+
+  /* --- Footer --- */
+  .site-footer {
+    padding: var(--space-sm) var(--space-md);
+    padding-bottom: calc(var(--space-sm) + env(safe-area-inset-bottom));
+    font-size: 0.78rem;
+    margin-top: var(--space-sm);
+  }
+
+  /* --- Weather widget on map --- */
+  .weather-widget {
+    padding: 6px 8px 4px;
+    min-width: 46px;
+  }
+
+  .weather-icon-wrap {
+    width: 30px;
+    height: 30px;
+  }
+
+  .weather-temp {
+    font-size: 0.75rem;
+  }
+}
+
+/* --- Very small phones (≤380px) --- */
+@media (max-width: 380px) {
+  .setup-container {
+    padding: 0 var(--space-sm);
+  }
+
+  .locations-panel,
+  .vibe-panel {
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .location-row .name-input {
+    width: 52px;
+    font-size: 0.7rem;
+  }
+
+  .setup-header h2 {
+    font-size: 1.15rem;
+  }
+
+  .toggle-track {
+    width: 190px;
+  }
+
+  .btn-find {
+    font-size: 0.88rem;
+    padding: 14px;
+  }
+
+  .venue-card {
+    gap: var(--space-xs);
+    padding: var(--space-sm);
+  }
+
+  .venue-photo,
+  .venue-photo-placeholder {
+    width: 40px;
+    height: 40px;
+  }
+
+  .venue-name {
+    font-size: 0.82rem;
   }
 }
 
