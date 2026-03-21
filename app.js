@@ -59,6 +59,77 @@ const _gmapsRateLimit = {
   },
 };
 
+// ---------- Monthly Google Maps Quota Guard (free-tier protection) ----------
+const _gmapsMonthlyQuota = {
+  _storageKey: 'gmaps_monthly_usage',
+  // Default monthly limits per service (stays within $200 free credit)
+  _defaultLimits: { geocode: 2000, nearby_search: 2000, directions: 2000, place_details: 1000 },
+
+  _getLimits() {
+    if (typeof CONFIG !== 'undefined' && CONFIG.MAPS_MONTHLY_LIMITS) return CONFIG.MAPS_MONTHLY_LIMITS;
+    return this._defaultLimits;
+  },
+
+  _load() {
+    try {
+      var raw = localStorage.getItem(this._storageKey);
+      if (raw) {
+        var data = JSON.parse(raw);
+        // Reset if we're in a new month
+        var now = new Date();
+        var currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+        if (data.month !== currentMonth) {
+          return { month: currentMonth, counts: {} };
+        }
+        return data;
+      }
+    } catch (e) { /* corrupt data, reset */ }
+    var now = new Date();
+    return { month: now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0'), counts: {} };
+  },
+
+  _save(data) {
+    try { localStorage.setItem(this._storageKey, JSON.stringify(data)); } catch (e) { /* quota full */ }
+  },
+
+  /** Returns true if the call is allowed, false if quota exceeded. */
+  check(service) {
+    var limits = this._getLimits();
+    var max = limits[service];
+    if (max === undefined) return true; // no limit configured for this service
+    var data = this._load();
+    var used = data.counts[service] || 0;
+    return used < max;
+  },
+
+  /** Record a successful API call. Call this AFTER the request is made. */
+  record(service) {
+    var data = this._load();
+    data.counts[service] = (data.counts[service] || 0) + 1;
+    this._save(data);
+  },
+
+  /** Get remaining calls for a service. */
+  remaining(service) {
+    var limits = this._getLimits();
+    var max = limits[service] || Infinity;
+    var data = this._load();
+    var used = data.counts[service] || 0;
+    return Math.max(0, max - used);
+  },
+};
+
+function showQuotaExceededPopup() {
+  var overlay = document.getElementById('quotaExceededModal');
+  if (overlay) overlay.classList.add('visible');
+}
+
+function hideQuotaExceededPopup(e) {
+  if (e && e.target && e.target.id !== 'quotaExceededModal') return;
+  var overlay = document.getElementById('quotaExceededModal');
+  if (overlay) overlay.classList.remove('visible');
+}
+
 const AVATAR_COLORS = [
   '#FF6B6B', '#48DBFB', '#FECA57', '#FF9FF3', '#54A0FF',
   '#5F27CD', '#01A3A4', '#F368E0', '#EE5A24', '#6AB04C',
@@ -369,6 +440,14 @@ function handleMapLinkPaste(e, id) {
 
 function reverseGeocodeAndSet(input, id, coords) {
   if (state.googleReady && google.maps.Geocoder) {
+    if (!_gmapsMonthlyQuota.check('geocode')) {
+      input.disabled = false;
+      var fallback = coords.lat.toFixed(5) + ', ' + coords.lng.toFixed(5);
+      input.value = fallback;
+      setLocationForId(id, fallback, coords.lat, coords.lng);
+      showQuotaExceededPopup();
+      return;
+    }
     if (!_gmapsRateLimit.check('geocode')) {
       input.disabled = false;
       var fallback = coords.lat.toFixed(5) + ', ' + coords.lng.toFixed(5);
@@ -380,6 +459,7 @@ function reverseGeocodeAndSet(input, id, coords) {
     var geocoder = new google.maps.Geocoder();
     var _gcStart = Date.now();
     geocoder.geocode({ location: { lat: coords.lat, lng: coords.lng } }, function(results, status) {
+      if (status === 'OK') _gmapsMonthlyQuota.record('geocode');
       logApiCall('google_maps', 'geocode', status === 'OK', status !== 'OK' ? status : null, Date.now() - _gcStart);
       input.disabled = false;
       if (status === 'OK' && results[0]) {
@@ -401,6 +481,12 @@ function reverseGeocodeAndSet(input, id, coords) {
 }
 
 function geocodeByName(input, id, name) {
+  if (!_gmapsMonthlyQuota.check('geocode')) {
+    input.disabled = false;
+    input.value = '';
+    showQuotaExceededPopup();
+    return;
+  }
   if (!_gmapsRateLimit.check('geocode')) {
     input.disabled = false;
     input.value = '';
@@ -410,6 +496,7 @@ function geocodeByName(input, id, name) {
   var geocoder = new google.maps.Geocoder();
   var _gcStart = Date.now();
   geocoder.geocode({ address: name }, function(results, status) {
+    if (status === 'OK') _gmapsMonthlyQuota.record('geocode');
     logApiCall('google_maps', 'geocode', status === 'OK', status !== 'OK' ? status : null, Date.now() - _gcStart);
     input.disabled = false;
     if (status === 'OK' && results[0]) {
@@ -494,6 +581,12 @@ function reverseGeocode(id, lat, lng) {
   const input = document.querySelector(`input[data-id="${id}"]`);
 
   if (state.googleReady) {
+    if (!_gmapsMonthlyQuota.check('geocode')) {
+      input.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      setLocationForId(id, input.value, lat, lng);
+      showQuotaExceededPopup();
+      return;
+    }
     if (!_gmapsRateLimit.check('geocode')) {
       input.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       setLocationForId(id, input.value, lat, lng);
@@ -503,6 +596,7 @@ function reverseGeocode(id, lat, lng) {
     const geocoder = new google.maps.Geocoder();
     var _gcStart = Date.now();
     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === 'OK') _gmapsMonthlyQuota.record('geocode');
       logApiCall('google_maps', 'geocode', status === 'OK', status !== 'OK' ? status : null, Date.now() - _gcStart);
       if (status === 'OK' && results[0]) {
         const address = results[0].formatted_address;
@@ -1030,6 +1124,11 @@ function searchNearbyPlaces(center) {
     };
     if (placeType) request.type = placeType;
 
+    if (!_gmapsMonthlyQuota.check('nearby_search')) {
+      showQuotaExceededPopup();
+      resolve(generateFallbackVenues(center));
+      return;
+    }
     if (!_gmapsRateLimit.check('nearby_search')) {
       showToast('Too many searches — please wait a moment');
       resolve(generateFallbackVenues(center));
@@ -1037,6 +1136,7 @@ function searchNearbyPlaces(center) {
     }
     var _nsStart = Date.now();
     state.placesService.nearbySearch(request, (results, status) => {
+      _gmapsMonthlyQuota.record('nearby_search');
       logApiCall('google_maps', 'nearby_search', status === google.maps.places.PlacesServiceStatus.OK, status !== google.maps.places.PlacesServiceStatus.OK ? status : null, Date.now() - _nsStart);
       if (status === google.maps.places.PlacesServiceStatus.OK && results.length > 0) {
         let venues = parseResults(results);
@@ -1047,12 +1147,13 @@ function searchNearbyPlaces(center) {
 
         if (venues.length < 5) {
           const widerRequest = { ...request, radius: 5000 };
-          if (!_gmapsRateLimit.check('nearby_search')) {
+          if (!_gmapsMonthlyQuota.check('nearby_search') || !_gmapsRateLimit.check('nearby_search')) {
             resolve(venues.slice(0, limit));
             return;
           }
           var _ns2Start = Date.now();
           state.placesService.nearbySearch(widerRequest, (results2, status2) => {
+            _gmapsMonthlyQuota.record('nearby_search');
             logApiCall('google_maps', 'nearby_search', status2 === google.maps.places.PlacesServiceStatus.OK, status2 !== google.maps.places.PlacesServiceStatus.OK ? status2 : null, Date.now() - _ns2Start);
             if (status2 === google.maps.places.PlacesServiceStatus.OK && results2.length > 0) {
               const moreVenues = parseResults(results2);
@@ -1268,6 +1369,16 @@ function fetchOneRoute(origin, dest, retries) {
       return;
     }
     var _dirStart = Date.now();
+    if (!_gmapsMonthlyQuota.check('directions')) {
+      const fallback = {
+        distKm: haversine(dest.lat, dest.lng, origin.lat, origin.lng),
+        durationMin: null,
+        routePoints: [[origin.lat, origin.lng], [dest.lat, dest.lng]],
+      };
+      _routeCache[cKey] = fallback;
+      res(fallback);
+      return;
+    }
     if (!_gmapsRateLimit.check('directions')) {
       const fallback = {
         distKm: haversine(dest.lat, dest.lng, origin.lat, origin.lng),
@@ -1286,6 +1397,7 @@ function fetchOneRoute(origin, dest, retries) {
         ? { departureTime: state.meetingTime, trafficModel: 'bestguess' }
         : { departureTime: new Date() },
     }, (result, status) => {
+      if (status === 'OK') _gmapsMonthlyQuota.record('directions');
       logApiCall('google_maps', 'directions', status === 'OK', status !== 'OK' ? status : null, Date.now() - _dirStart);
       if (status === 'OK' && result.routes[0]) {
         const leg = result.routes[0].legs[0];
@@ -1937,11 +2049,12 @@ function showShareModal() {
   _populateShareCard(v, null);
 
   // Fetch Place Details for opening hours
-  if (v && v.placeId && state.placesService && _gmapsRateLimit.check('place_details')) {
+  if (v && v.placeId && state.placesService && _gmapsMonthlyQuota.check('place_details') && _gmapsRateLimit.check('place_details')) {
     var _pdStart = Date.now();
     state.placesService.getDetails(
       { placeId: v.placeId, fields: ['opening_hours', 'business_status', 'utc_offset_minutes'] },
       function(place, detailStatus) {
+        if (detailStatus === google.maps.places.PlacesServiceStatus.OK) _gmapsMonthlyQuota.record('place_details');
         logApiCall('google_maps', 'place_details', detailStatus === google.maps.places.PlacesServiceStatus.OK, detailStatus !== google.maps.places.PlacesServiceStatus.OK ? detailStatus : null, Date.now() - _pdStart);
         if (detailStatus === google.maps.places.PlacesServiceStatus.OK && place) {
           _populateShareCard(v, place);

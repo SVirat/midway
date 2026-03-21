@@ -1560,6 +1560,25 @@ a {
   margin-bottom: var(--space-md);
 }
 
+/* ---------- Quota Exceeded Modal ---------- */
+.quota-modal {
+  text-align: center;
+  max-width: 340px;
+}
+.quota-modal-icon {
+  font-size: 2.4rem;
+  margin-bottom: var(--space-sm);
+}
+.quota-modal-text {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  margin-bottom: var(--space-lg);
+  line-height: 1.5;
+}
+.quota-modal-ok {
+  width: 100%;
+}
+
 .fairness-card-preview {
   background: var(--surface);
   border: 1px solid var(--border);

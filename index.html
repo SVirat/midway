@@ -225,6 +225,17 @@
   <!-- ============ TOAST ============ -->
   <div class="toast" id="toast"></div>
 
+  <!-- ============ QUOTA EXCEEDED POPUP ============ -->
+  <div class="modal-overlay" id="quotaExceededModal" onclick="hideQuotaExceededPopup(event)">
+    <div class="modal quota-modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="hideQuotaExceededPopup()"><i class="fa-solid fa-xmark"></i></button>
+      <div class="quota-modal-icon">&#x26A0;&#xFE0F;</div>
+      <h3>Maps limit reached</h3>
+      <p class="quota-modal-text">Crossed the limit of Maps calls. Try again later.</p>
+      <button class="btn btn-primary quota-modal-ok" onclick="hideQuotaExceededPopup()">OK</button>
+    </div>
+  </div>
+
   <!-- ============ SIDE PANEL (saved locations, friends, favorites) ============ -->
   <div class="side-panel-overlay" id="sidePanelOverlay" onclick="closeSidePanel()"></div>
   <div class="side-panel" id="sidePanel">

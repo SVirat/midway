@@ -3,4 +3,6 @@
 // config.js is excluded from version control via .gitignore.
 const CONFIG = {
   GOOGLE_MAPS_API_KEY: 'YOUR_GOOGLE_MAPS_API_KEY',
+  // Monthly Google Maps API call limits (free-tier protection, resets each month)
+  MAPS_MONTHLY_LIMITS: { geocode: 2000, nearby_search: 2000, directions: 2000, place_details: 1000 },
 };
