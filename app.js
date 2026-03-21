@@ -599,6 +599,8 @@ function getPersonName(id) {
 }
 
 function editPersonName(id, avatar) {
+  // Don't allow renaming if this is the signed-in user's own row
+  if (window._isSignedIn && id === state.myLocationId) return;
   const row = avatar.closest('.location-row');
   const nameInput = row.querySelector('.name-input');
   nameInput.style.display = 'block';
@@ -2032,14 +2034,42 @@ function joinGroupChannel() {
 function broadcastMyPresence() {
   if (!state.groupChannel) return;
   var localLocs = state.locations.filter(function(l) { return !l.remote; });
+  // Get signed-in user's avatar URL if available
+  var avatarUrl = null;
+  var signedInName = null;
+  if (window._isSignedIn && currentUser) {
+    var meta = currentUser.user_metadata || {};
+    avatarUrl = meta.avatar_url || meta.picture || null;
+    signedInName = meta.full_name || meta.name || null;
+  }
+  // Ensure the user's own row is always included even without a location
+  var hasMyRow = localLocs.some(function(l) { return l.id === state.myLocationId; });
+  if (!hasMyRow) {
+    localLocs.unshift({
+      id: state.myLocationId,
+      name: signedInName || getPersonName(state.myLocationId),
+      address: null,
+      lat: null,
+      lng: null,
+    });
+  }
   var people = localLocs.map(function(l) {
-    return {
+    var person = {
       id: l.id,
       name: l.name || getPersonName(l.id),
       address: l.address || null,
       lat: l.lat || null,
       lng: l.lng || null,
     };
+    // Attach avatar URL to the user's own location
+    if (l.id === state.myLocationId && avatarUrl) {
+      person.avatarUrl = avatarUrl;
+    }
+    // Use signed-in name for the user's own location
+    if (l.id === state.myLocationId && signedInName) {
+      person.name = signedInName;
+    }
+    return person;
   });
   state.groupChannel.track({ people: people });
 }
@@ -2115,9 +2145,21 @@ function renderGroupMembers() {
 
       var personName = person.name || 'Friend';
       var avatarTitle = isDefaultName(personName) ? '' : personName;
+      var hasPhoto = person.avatarUrl;
+
+      var avatarHtml;
+      if (hasPhoto) {
+        avatarHtml = '<div class="person-avatar" style="background:none;overflow:hidden"' +
+          (avatarTitle ? ' title="' + avatarTitle.replace(/"/g, '&quot;') + '"' : '') + '>' +
+          '<img src="' + person.avatarUrl.replace(/"/g, '&quot;') + '" alt="' + initials + '" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />' +
+          '</div>';
+      } else {
+        avatarHtml = '<div class="person-avatar" style="background:' + color + '"' +
+          (avatarTitle ? ' title="' + avatarTitle.replace(/"/g, '&quot;') + '"' : '') + '>' + initials + '</div>';
+      }
 
       row.innerHTML =
-        '<div class="person-avatar" style="background:' + color + '"' + (avatarTitle ? ' title="' + avatarTitle.replace(/"/g, '&quot;') + '"' : '') + '>' + initials + '</div>' +
+        avatarHtml +
         '<input type="text" value="' + locationText.replace(/"/g, '&quot;') + '" disabled class="' + statusClass + '" />' +
         '<span class="remote-badge"><i class="fa-solid fa-wifi"></i> Live</span>';
 

@@ -41,6 +41,7 @@ Midway helps groups of friends find the best place to meet. Enter everyone's sta
 - **Invite Friends** — Creates a unique group link (e.g. `mway.vercel.app/?group=ABC123`) that can be shared with friends
 - **Live Sync** — Friends who open the link join the session in real-time via Supabase Presence; all locations sync across browsers instantly
 - **Independent Searches** — Vibes, categories, and venue results remain individual per user; only the group's locations are shared
+- **Profile Photos in Groups** — Signed-in users' Google profile photos and names are shown to all group members
 - **"This is you" Indicator** — Highlighted row and popup to identify your own location field when multiple people are in the session
 - **Stale Results Warning** — Toast notification if the group changes after you've generated venue results
 - **Auto-Expiry** — Group links expire after 12 hours; expired/invalid links show a toast and redirect to a fresh session
@@ -49,7 +50,7 @@ Midway helps groups of friends find the best place to meet. Enter everyone's sta
 ### Extras
 - **Weather Widget** — Live weather at the midpoint via Open-Meteo
 - **Geolocation** — "Use my location" button (opt-in, not on page load)
-- **Google Sign-In** — Save locations, unlock AI features, profile photo avatar
+- **Google Sign-In** — Save locations, unlock AI features, profile photo avatar (signed-in users' names are locked and shown on hover)
 - **Pareto Dominance Ranking** — Venues where everyone benefits equally rank higher
 - **Travel Hero Badge** — Shows who travels the farthest
 

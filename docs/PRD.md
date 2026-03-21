@@ -1,4 +1,4 @@
-# Midway — Product Requirements Document
+# Midway: Product Requirements Document
 
 **Version:** 1.0  
 **Last Updated:** March 21, 2026  
@@ -146,6 +146,9 @@ Each venue card provides:
 - Combined "This is you. Click to name." tooltip if the name hint fires simultaneously
 - Toast: "New friends have been added since generation" / "Some friends have been removed since generation" if the group changes after results exist
 - Placeholder text reads "Enter your location..." for the user's own row
+- Hover over any named avatar shows their name; unnamed avatars show "Click to rename"
+- Signed-in users' Google profile photos appear as avatars for all group members
+- Signed-in users cannot rename themselves — their Google profile name is used automatically
 
 **Technical:**
 - Uses Supabase Realtime Presence (no additional server infrastructure)

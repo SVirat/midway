@@ -61,7 +61,7 @@ async function signInWithGoogle() {
   const { error } = await _supabaseClient.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + window.location.pathname,
+      redirectTo: window.location.origin + window.location.pathname + window.location.search,
     },
   });
 
@@ -113,23 +113,42 @@ function onSignedIn(user) {
   document.querySelectorAll('.auth-only').forEach(el => el.style.display = '');
   window._isSignedIn = true;
 
-  // Update "You" avatar in location list with profile photo
-  if (avatar) {
+  // Update "You" avatar in location list with profile photo and signed-in name
+  if (avatar || name) {
     var firstRow = document.querySelector('#locationsList .location-row');
     if (firstRow) {
       var personAvatar = firstRow.querySelector('.person-avatar');
       if (personAvatar) {
-        personAvatar.innerHTML = '';
-        personAvatar.style.background = 'none';
-        personAvatar.style.overflow = 'hidden';
-        var img = document.createElement('img');
-        img.src = avatar;
-        img.referrerPolicy = 'no-referrer';
-        img.alt = name.charAt(0);
-        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
-        personAvatar.appendChild(img);
+        // Set profile photo
+        if (avatar) {
+          personAvatar.innerHTML = '';
+          personAvatar.style.background = 'none';
+          personAvatar.style.overflow = 'hidden';
+          var img = document.createElement('img');
+          img.src = avatar;
+          img.referrerPolicy = 'no-referrer';
+          img.alt = name.charAt(0);
+          img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;';
+          personAvatar.appendChild(img);
+        }
+        // Show name on hover, remove click-to-rename
+        personAvatar.title = name;
+        personAvatar.removeAttribute('onclick');
+        personAvatar.style.cursor = 'default';
+      }
+      // Update the name input and state
+      var nameInput = firstRow.querySelector('.name-input');
+      if (nameInput) nameInput.value = name;
+      if (typeof state !== 'undefined' && state.myLocationId) {
+        var loc = state.locations.find(function(l) { return l.id === state.myLocationId; });
+        if (loc) loc.name = name;
       }
     }
+  }
+
+  // Re-broadcast to group with signed-in profile
+  if (typeof state !== 'undefined' && state.groupId && typeof broadcastMyPresence === 'function') {
+    broadcastMyPresence();
   }
 
   // Unlock AI prompt
