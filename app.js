@@ -1459,8 +1459,9 @@ async function loadMoreOptions() {
 }
 
 function openGoogleMapsPlace(placeId) {
-  window.open('https://www.google.com/maps/place/?q=place_id:' + encodeURIComponent(placeId), '_blank', 'noopener,noreferrer');
   const venue = state.results.find(v => v.placeId === placeId);
+  const query = venue ? encodeURIComponent(venue.name) : '';
+  window.open('https://www.google.com/maps/search/?api=1&query=' + query + '&query_place_id=' + encodeURIComponent(placeId), '_blank', 'noopener,noreferrer');
   if (venue) {
     logVenueInteraction(venue, 'view');
     trackEvent('venue_view', { venueName: venue.name, venuePlaceId: placeId });
@@ -1812,7 +1813,7 @@ function getShareMessage() {
   const dd = state._distanceData || [];
   const totalDist = dd.reduce((s, d) => s + d.distKm, 0);
   let msg = 'Hey! How does this look?\n' + (v ? v.name : '');
-  if (v && v.placeId) msg += ' (https://www.google.com/maps/place/?q=place_id:' + encodeURIComponent(v.placeId) + ')';
+  if (v && v.placeId) msg += ' (https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(v.name) + '&query_place_id=' + encodeURIComponent(v.placeId) + ')';
   if (v && v.address) msg += '\n📍 ' + v.address;
   if (v && v.rating) msg += '\n⭐ ' + v.rating + (v.userRatingsTotal ? ' (' + v.userRatingsTotal + ' reviews)' : '');
   msg += '\n\nFound with Midway: https://mway.vercel.app';
