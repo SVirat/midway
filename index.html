@@ -24,6 +24,10 @@
       <button class="btn btn-sm btn-primary" id="shareBtn" onclick="showShareModal()" style="display:none">
         <i class="fa-solid fa-share-nodes"></i> Share
       </button>
+      <!-- Upgrade -->
+      <button class="btn btn-sm btn-upgrade" id="upgradeBtn" onclick="showUpgradeModal()">
+        <i class="fa-solid fa-bolt"></i> Upgrade
+      </button>
       <!-- Auth -->
       <div class="auth-area" id="authArea">
         <button class="btn btn-sm btn-google-signin" id="googleSignInBtn" onclick="signInWithGoogle()">
@@ -82,7 +86,13 @@
           <div class="ai-prompt-section" id="aiPromptSection">
             <p class="ai-prompt-label"><i class="fa-solid fa-sparkles"></i>Tell our <b>AI Agent</b> the vibe you want</p>
             <div class="ai-prompt-wrap" id="aiPromptWrap">
-              <input type="text" id="vibeInput" class="ai-prompt-input" placeholder='e.g. "great outdoor seating with tasty fries"' oninput="runVibeCheck()" />
+              <input type="text" id="vibeInput" class="ai-prompt-input" oninput="runVibeCheck()" />
+              <div class="cycling-placeholder" id="cyclingPlaceholder">
+                <span class="cycling-placeholder-prefix">e.g.&nbsp;</span>
+                <span class="cycling-placeholder-track">
+                  <span class="cycling-placeholder-text">"great outdoor seating with tasty fries"</span>
+                </span>
+              </div>
             </div>
           </div>
           <details class="vibe-more-options" id="vibeMoreOptions" style="display:none">
@@ -175,10 +185,6 @@
 
     <!-- RESULTS SECTION (hidden until search) -->
     <div id="resultsSection" class="results-section" style="display:none">
-      <div class="progress-bar-track" id="progressBarTrack">
-        <div class="progress-bar-fill" id="progressBarFill"></div>
-        <div class="progress-bar-label" id="progressBarLabel"></div>
-      </div>
       <div class="results-top-header">
         <h3>Top Spots</h3>
         <div class="results-mode-badge" id="resultModeBadge">
@@ -249,6 +255,46 @@
     Made with <span class="heart">&#10084;&#65039;</span> in Hyderabad. <a id="supportLink" href="#" target="_blank" rel="noopener noreferrer">Support the developer</a>.
   </footer>
 
+  <!-- ============ UPGRADE MODAL ============ -->
+  <div class="modal-overlay" id="upgradeModal" onclick="hideUpgradeModal(event)">
+    <div class="modal upgrade-modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="hideUpgradeModal()"><i class="fa-solid fa-xmark"></i></button>
+      <div class="upgrade-badge"><i class="fa-solid fa-crown"></i> PRO</div>
+      <h3 class="upgrade-title">Upgrade to <span class="gradient-text">Midway Pro</span></h3>
+      <p class="upgrade-subtitle">Unlock the full potential of your meetups</p>
+
+      <!-- Plan Toggle -->
+      <div class="plan-toggle-wrapper">
+        <span class="plan-label active" id="planLabelMonthly">Monthly</span>
+        <label class="plan-toggle">
+          <input type="checkbox" id="planToggle" onchange="onPlanToggle()" />
+          <div class="plan-toggle-track"><div class="plan-toggle-thumb"></div></div>
+        </label>
+        <span class="plan-label" id="planLabelYearly">Yearly <span class="plan-save-tag">Save 16%</span></span>
+      </div>
+
+      <!-- Price -->
+      <div class="upgrade-price" id="upgradePrice">
+        <span class="price-amount">&#8377;99</span>
+        <span class="price-period">/month</span>
+      </div>
+
+      <!-- Benefits -->
+      <ul class="upgrade-benefits">
+        <li><i class="fa-solid fa-users"></i> <strong>2x</strong> as many friends in a group</li>
+        <li><i class="fa-solid fa-map-location-dot"></i> <strong>2x</strong> as many results provided</li>
+        <li><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>4x</strong> better AI results</li>
+      </ul>
+
+      <!-- CTA -->
+      <button class="btn btn-primary btn-lg upgrade-cta" id="upgradeCta" onclick="startUpgradeFlow()">
+        <i class="fa-solid fa-bolt"></i> Upgrade Now
+      </button>
+      <p class="upgrade-fine-print">Secure payment. Cancel anytime.</p>
+    </div>
+  </div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js"></script>

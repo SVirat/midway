@@ -876,60 +876,44 @@ function detectCategoryFromPrompt(prompt) {
 }
 
 // ---------- Find Sweet Spot ----------
-var _progressBar = {
-  current: 0,
-  target: 0,
-  raf: null,
-  speed: 0.4, // percent per frame (~60fps)
-};
-
-function _animateProgress() {
-  var diff = _progressBar.target - _progressBar.current;
-  if (Math.abs(diff) < 0.2) {
-    _progressBar.current = _progressBar.target;
-  } else {
-    // Ease toward target — faster when far, slower when close
-    _progressBar.current += diff * 0.06;
+function showResultsLoading(message) {
+  var layout = document.querySelector('.results-layout-inline');
+  if (!layout) return;
+  var existing = layout.querySelector('.results-loading-overlay');
+  if (existing) {
+    // Just update text, don't recreate the bar
+    var textEl = existing.querySelector('.results-loading-text');
+    if (textEl) textEl.textContent = message;
+    return;
   }
-  var fill = document.getElementById('progressBarFill');
-  if (fill) fill.style.width = _progressBar.current + '%';
-  if (_progressBar.current < _progressBar.target || _progressBar.target < 100) {
-    _progressBar.raf = requestAnimationFrame(_animateProgress);
-  } else {
-    // Reached 100 — done
-    cancelAnimationFrame(_progressBar.raf);
-    _progressBar.raf = null;
-  }
+  var overlay = document.createElement('div');
+  overlay.className = 'results-loading-overlay';
+  overlay.innerHTML = '<div class="results-loading-text">' + message + '</div><div class="results-loading-bar"><div class="results-loading-bar-fill"></div></div>';
+  layout.appendChild(overlay);
+  // Kick off the bar at 0 then smoothly advance
+  var fill = overlay.querySelector('.results-loading-bar-fill');
+  fill.offsetWidth; // force reflow
+  fill.style.width = '30%';
 }
 
-function showResultsLoading(message, targetPercent) {
-  var track = document.getElementById('progressBarTrack');
-  var label = document.getElementById('progressBarLabel');
-  if (!track) return;
-  track.classList.add('active');
-  if (label) label.textContent = message;
-  // Set target — never go backwards
-  var pct = targetPercent || 15;
-  if (pct > _progressBar.target) _progressBar.target = pct;
-  if (!_progressBar.raf) _progressBar.raf = requestAnimationFrame(_animateProgress);
+function setLoadingProgress(pct) {
+  var fill = document.querySelector('.results-loading-bar-fill');
+  if (fill) fill.style.width = pct + '%';
 }
 
 function hideResultsLoading() {
-  // Animate to 100%, then hide after transition
-  _progressBar.target = 100;
-  if (!_progressBar.raf) _progressBar.raf = requestAnimationFrame(_animateProgress);
-  setTimeout(function() {
-    var track = document.getElementById('progressBarTrack');
-    if (track) track.classList.remove('active');
-    // Reset for next use
-    _progressBar.current = 0;
-    _progressBar.target = 0;
-    var fill = document.getElementById('progressBarFill');
-    if (fill) fill.style.width = '0%';
-    var label = document.getElementById('progressBarLabel');
-    if (label) label.textContent = '';
-    if (_progressBar.raf) { cancelAnimationFrame(_progressBar.raf); _progressBar.raf = null; }
-  }, 700);
+  var fill = document.querySelector('.results-loading-bar-fill');
+  if (!fill) {
+    var overlay = document.querySelector('.results-loading-overlay');
+    if (overlay) overlay.remove();
+    return;
+  }
+  // Smoothly jump to 100%, then remove after transition
+  fill.style.width = '100%';
+  setTimeout(function () {
+    var overlay = document.querySelector('.results-loading-overlay');
+    if (overlay) overlay.remove();
+  }, 350);
 }
 
 function updateFindButton() {
@@ -1035,12 +1019,10 @@ function findSweetSpot() {
   }
 
   // Show loading indicators
+  var summaryEl = document.getElementById('resultsSummary');
+  if (summaryEl) summaryEl.innerHTML = '';
   document.getElementById('resultsList').innerHTML = '';
-  _progressBar.current = 0;
-  _progressBar.target = 0;
-  var fill = document.getElementById('progressBarFill');
-  if (fill) fill.style.width = '0%';
-  showResultsLoading('Searching nearby venues...', 15);
+  showResultsLoading('Searching nearby venues...');
 
   setTimeout(() => {
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1053,10 +1035,10 @@ function findSweetSpot() {
 
   const _doSearch = async function(aiKeywords) {
     // Step 2: Search for real places near center (with AI keywords if available)
-    showResultsLoading('Searching nearby venues...', 35);
+    showResultsLoading('Searching nearby venues...');
+    setLoadingProgress(40);
     const venues_raw = await searchNearbyPlaces(center, aiKeywords);
     if (!venues_raw || venues_raw.length === 0) {
-      hideResultsLoading();
       btn.disabled = false;
       btn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Find the midway';
       return;
@@ -1065,7 +1047,8 @@ function findSweetSpot() {
     // Step 2.5: If AI prompt, fetch Google reviews and let AI filter by review content
     var venues = rankVenuesByMode(venues_raw);
     if (isFreeTextPrompt && venues.length > 0) {
-      showResultsLoading('AI is reading reviews...', 60);
+      showResultsLoading('AI is reading reviews...');
+      setLoadingProgress(55);
       await fetchVenueReviews(venues);
       try {
         venues = await aiFilterByReviews(aiPromptText, venues);
@@ -1074,13 +1057,25 @@ function findSweetSpot() {
       }
     }
 
-    // Step 3: Rank venues by haversine (free). Real routes are fetched lazily per venue selection.
-    venues = rankVenuesByMode(venues); // ranks using haversine fallback when _realDists not set
+    // Step 3: Initial rank by haversine to pick top candidates
+    venues = rankVenuesByMode(venues);
     const top5 = venues.slice(0, 5);
-
-    // Step 4: Combine top 5 (haversine-ranked) with the rest
     const rest = venues.slice(5);
-    venues = top5.concat(rest);
+
+    // Step 4: Fetch real driving distances for top 5 venues (parallel per venue)
+    showResultsLoading('Calculating real driving routes...');
+    setLoadingProgress(65);
+    await Promise.all(top5.map(async (v) => {
+      if (v._routeData) return; // already fetched
+      var routeData = await fetchRealDistances({ lat: v.lat, lng: v.lng });
+      v._routeData = routeData;
+      v._realDists = routeData.map(d => d.distKm);
+      v._realTimes = routeData.map(d => d.durationMin);
+    }));
+
+    // Step 5: Re-rank top 5 using real driving data
+    var reranked = rankVenuesByMode(top5);
+    venues = reranked.concat(rest);
     venues.forEach((v, idx) => { v.id = idx + 1; });
 
     state._allVenues = venues;
@@ -1088,8 +1083,7 @@ function findSweetSpot() {
     state.chosenVenue = state.results[0] || null;
     state._resultsLocationCount = state.locations.length;
 
-    // Step 5: Use cached route data when available, otherwise fetch for #1 only
-    showResultsLoading('Mapping routes...', 80);
+    // Step 6: Use the already-fetched route data for #1
     const destination = state.chosenVenue
       ? { lat: state.chosenVenue.lat, lng: state.chosenVenue.lng }
       : center;
@@ -1107,7 +1101,7 @@ function findSweetSpot() {
     }
     state._distanceData = distanceData;
 
-    renderSummaryFromRoutes(destination, distanceData);
+    setLoadingProgress(90);
     hideResultsLoading();
     renderVenueList();
     renderMap(destination, distanceData);
@@ -1136,7 +1130,8 @@ function findSweetSpot() {
 
   if (isFreeTextPrompt) {
     // AI prompt detected — extract smart keywords before searching
-    showResultsLoading('AI is understanding your vibe...', 20);
+    showResultsLoading('AI is understanding your vibe...');
+    setLoadingProgress(15);
     aiExtractKeywords(aiPromptText).then(function(aiKeywords) {
       _doSearch(aiKeywords); // aiKeywords is null if AI failed (falls back to simple keyword)
     });
@@ -1556,7 +1551,7 @@ function fetchOneRoute(origin, dest, retries) {
         durationMin: null,
         routePoints: [[origin.lat, origin.lng], [dest.lat, dest.lng]],
       };
-      _routeCache[cKey] = fallback;
+      // Don't cache rate-limited fallbacks so they can be retried
       res(fallback);
       return;
     }
@@ -1705,10 +1700,7 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-// ---------- Render Summary with Real Distances ----------
-function renderSummaryFromRoutes(center, distanceData) {
-  // Summary table removed
-}
+
 
 // ---------- Render Venue List ----------
 function renderVenueList() {
@@ -1830,21 +1822,20 @@ function selectVenue(vid) {
     venue_rank: state.results.findIndex(v => v.id === vid) + 1,
   });
 
-  // Use cached route data if available, otherwise fetch and cache
+  // Use cached route data if available and has real driving data, otherwise fetch
   const dest = { lat: state.chosenVenue.lat, lng: state.chosenVenue.lng };
-  if (state.chosenVenue._routeData) {
+  var hasRealRoutes = state.chosenVenue._routeData &&
+    state.chosenVenue._routeData.every(function(d) { return d.durationMin !== null; });
+  if (hasRealRoutes) {
     state._distanceData = state.chosenVenue._routeData;
-    renderSummaryFromRoutes(dest, state._distanceData);
     renderMap(dest, state._distanceData);
   } else {
-    // Show inline loading while routes are fetched
-
+    // Fetch (or re-fetch) real driving routes
     fetchRealDistances(dest).then(distanceData => {
       state._distanceData = distanceData;
       state.chosenVenue._routeData = distanceData;
       state.chosenVenue._realDists = distanceData.map(d => d.distKm);
       state.chosenVenue._realTimes = distanceData.map(d => d.durationMin);
-      renderSummaryFromRoutes(dest, distanceData);
       renderMap(dest, distanceData);
     });
   }
@@ -1870,6 +1861,10 @@ function getSortedVenues() {
 function sortVenues(mode) {
   state._sortMode = mode;
   renderVenueList();
+  // Re-render map so venue marker ranks match the new sidebar order
+  if (state.chosenVenue && state._distanceData) {
+    renderMap({ lat: state.chosenVenue.lat, lng: state.chosenVenue.lng }, state._distanceData);
+  }
 }
 
 async function loadMoreOptions() {
@@ -1946,49 +1941,50 @@ function renderMap(center, distanceData) {
   state.markers = [];
   state.routeLayers = [];
 
-  // --- Route hover/click interaction state ---
-  var activeRouteIdx = null;
-  var hideTimeout = null;
-  var lastClickTime = 0;
-  var routePopup = L.popup({ closeButton: false, className: 'route-info-popup', offset: [0, -8], autoPan: false });
+  // Track currently highlighted route for dismissal
+  var activeRoutePopup = null;
+  var activeRouteLine = null;
 
-  function showRouteInfo(idx, latlng) {
-    clearTimeout(hideTimeout);
-    var d = distanceData[idx];
-    var color = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-    var content = '<div class="route-popup-content">' +
-      '<div class="route-popup-name" style="border-left:3px solid ' + color + ';padding-left:8px">' + escapeHtml(d.loc.name) + '</div>' +
+  function highlightRoute(routeLine, d, latlng) {
+    // Dismiss any previously active route popup
+    dismissActiveRoute();
+
+    // Highlight: thicken, raise opacity, bring to front
+    routeLine.setStyle({ weight: 6, opacity: 1 });
+    routeLine.bringToFront();
+    activeRouteLine = routeLine;
+
+    // Build popup content
+    var popupContent = '<div class="route-popup">' +
+      '<strong>' + escapeHtml(d.loc.name) + '</strong>' +
       '<div class="route-popup-stats">' +
-      '<span><i class="fa-solid fa-road"></i> ' + d.distKm.toFixed(1) + ' km</span>' +
-      '<span><i class="fa-solid fa-clock"></i> ' + (d.durationMin !== null ? d.durationMin + ' min' : '\u2014') + '</span>' +
+      '<span>' + d.distKm.toFixed(1) + ' km</span>' +
+      (d.durationMin !== null ? '<span>' + d.durationMin + ' min drive</span>' : '') +
       '</div></div>';
-    routePopup.setLatLng(latlng).setContent(content).openOn(state.map);
 
-    if (activeRouteIdx !== idx) {
-      activeRouteIdx = idx;
-      state.routeLayers.forEach(function(r, j) {
-        if (j === idx) {
-          r.setStyle({ weight: 6, opacity: 1 });
-          r.bringToFront();
-        } else {
-          r.setStyle({ weight: 3, opacity: 0.25 });
-        }
-      });
-      state.markers.forEach(function(m) { if (m._icon) m._icon.style.zIndex = ''; });
-      if (state.markers[idx] && state.markers[idx]._icon) state.markers[idx]._icon.style.zIndex = 10000;
+    activeRoutePopup = L.popup({ closeButton: false, className: 'route-info-popup', offset: [0, -4] })
+      .setLatLng(latlng)
+      .setContent(popupContent)
+      .openOn(state.map);
+  }
+
+  function dismissActiveRoute() {
+    if (activeRouteLine) {
+      var idx = state.routeLayers.indexOf(activeRouteLine);
+      var origColor = AVATAR_COLORS[(idx >= 0 ? idx : 0) % AVATAR_COLORS.length];
+      activeRouteLine.setStyle({ weight: 3, opacity: 0.6, color: origColor });
+      activeRouteLine = null;
+    }
+    if (activeRoutePopup) {
+      state.map.closePopup(activeRoutePopup);
+      activeRoutePopup = null;
     }
   }
 
-  function hideRouteInfo() {
-    state.map.closePopup(routePopup);
-    activeRouteIdx = null;
-    state.routeLayers.forEach(function(r) { r.setStyle({ weight: 3, opacity: 0.6 }); });
-    state.markers.forEach(function(m) { if (m._icon) m._icon.style.zIndex = ''; });
-  }
-
-  function scheduleHide() {
-    hideTimeout = setTimeout(hideRouteInfo, 200);
-  }
+  // Dismiss route popup when clicking on the map background
+  state.map.on('click', function () {
+    dismissActiveRoute();
+  });
 
   // Draw real routes from each person to the center
   distanceData.forEach((d, i) => {
@@ -2000,15 +1996,36 @@ function renderMap(center, distanceData) {
       weight: 3,
       opacity: 0.6,
     }).addTo(state.map);
-    state.routeLayers.push(routeLine);
 
-    // Invisible wider polyline as hover/tap target for the route
-    var hitLine = L.polyline(d.routePoints, {
-      color: 'transparent',
-      weight: 20,
-      opacity: 0,
-      interactive: true,
-    }).addTo(state.map);
+    // On mobile/touch devices, add a wider invisible hit-area polyline for easier tapping
+    var isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    if (isTouchDevice) {
+      var hitArea = L.polyline(d.routePoints, {
+        color: color,
+        weight: 24,
+        opacity: 0,
+        interactive: true,
+      }).addTo(state.map);
+      hitArea.on('click', function (e) {
+        L.DomEvent.stopPropagation(e);
+        highlightRoute(routeLine, d, e.latlng);
+      });
+    }
+
+    // Route hover/click interaction: show popup with friend info
+    routeLine.on('mouseover', function (e) {
+      highlightRoute(routeLine, d, e.latlng);
+    });
+    routeLine.on('mouseout', function () {
+      dismissActiveRoute();
+    });
+    // Mobile: tap to show, tap elsewhere to dismiss
+    routeLine.on('click', function (e) {
+      L.DomEvent.stopPropagation(e);
+      highlightRoute(routeLine, d, e.latlng);
+    });
+
+    state.routeLayers.push(routeLine);
 
     // Person marker
     const icon = L.divIcon({
@@ -2018,32 +2035,30 @@ function renderMap(center, distanceData) {
       iconAnchor: [18, 18],
     });
 
-    const marker = L.marker([d.loc.lat, d.loc.lng], { icon: icon }).addTo(state.map);
+    const marker = L.marker([d.loc.lat, d.loc.lng], { icon: icon })
+      .addTo(state.map)
+      .bindPopup('<strong>' + escapeHtml(d.loc.name) + '</strong><br>' + escapeHtml(d.loc.address) + '<br>' + d.distKm.toFixed(1) + ' km' + (d.durationMin !== null ? ' &middot; ' + d.durationMin + ' min drive' : ''));
+
+    // Highlight route when hovering/clicking the friend's icon
+    marker.on('mouseover', function () {
+      var mid = Math.floor(d.routePoints.length / 2);
+      var latlng = L.latLng(d.routePoints[mid][0], d.routePoints[mid][1]);
+      highlightRoute(routeLine, d, latlng);
+    });
+    marker.on('mouseout', function () {
+      dismissActiveRoute();
+    });
+    marker.on('click', function (e) {
+      L.DomEvent.stopPropagation(e);
+      var mid = Math.floor(d.routePoints.length / 2);
+      var latlng = L.latLng(d.routePoints[mid][0], d.routePoints[mid][1]);
+      highlightRoute(routeLine, d, latlng);
+    });
+
     state.markers.push(marker);
-
-    // Bind interaction: hover for desktop, click for mobile, both always attached
-    hitLine.on('mouseover', function(e) { showRouteInfo(i, e.latlng); });
-    hitLine.on('mousemove', function(e) { if (activeRouteIdx === i) routePopup.setLatLng(e.latlng); });
-    hitLine.on('mouseout', function() { if (Date.now() - lastClickTime > 400) scheduleHide(); });
-    hitLine.on('click', function(e) { L.DomEvent.stopPropagation(e); lastClickTime = Date.now(); clearTimeout(hideTimeout); showRouteInfo(i, e.latlng); });
-    marker.on('mouseover', function() { showRouteInfo(i, marker.getLatLng()); });
-    marker.on('mouseout', function() { if (Date.now() - lastClickTime > 400) scheduleHide(); });
-    marker.on('click', function(e) { L.DomEvent.stopPropagation(e); lastClickTime = Date.now(); clearTimeout(hideTimeout); showRouteInfo(i, marker.getLatLng()); });
   });
 
-  // Keep popup alive when cursor moves onto popup element itself
-  state.map.on('popupopen', function() {
-    var el = routePopup.getElement();
-    if (el) {
-      el.addEventListener('mouseenter', function() { clearTimeout(hideTimeout); });
-      el.addEventListener('mouseleave', scheduleHide);
-    }
-  });
-
-  // Dismiss on map click
-  state.map.on('click', hideRouteInfo);
-
-  // Venue markers — use sorted order to match sidebar numbering
+  // Venue markers — use sorted order to match sidebar ranks
   var sortedVenues = getSortedVenues();
   sortedVenues.forEach((v, i) => {
     const vIcon = L.divIcon({
@@ -2565,10 +2580,6 @@ async function loadSharedSession() {
   }
 
   // Render from snapshot data
-  renderSummaryFromRoutes(
-    { lat: state.chosenVenue.lat, lng: state.chosenVenue.lng },
-    state._distanceData
-  );
   renderVenueList();
   renderMap(
     { lat: state.chosenVenue.lat, lng: state.chosenVenue.lng },
@@ -2909,6 +2920,72 @@ function loadGoogleMaps() {
   document.head.appendChild(script);
 }
 
+// ---------- Cycling Placeholder for AI Agent ----------
+function initCyclingPlaceholder() {
+  var phrases = [
+    '\u201Cgreat outdoor seating with tasty fries\u201D',
+    '\u201Cquiet place to get work done\u201D',
+    '\u201Cbowling and arcade!\u201D',
+    '\u201Chealthy salads, matcha, earthy vibes\u201D'
+  ];
+  var index = 0;
+  var container = document.getElementById('cyclingPlaceholder');
+  var textEl = container.querySelector('.cycling-placeholder-text');
+  var input = document.getElementById('vibeInput');
+  var intervalId = null;
+
+  function updateVisibility() {
+    if (input.value.length > 0) {
+      container.classList.add('hidden');
+    } else {
+      container.classList.remove('hidden');
+    }
+  }
+
+  input.addEventListener('input', updateVisibility);
+  input.addEventListener('focus', updateVisibility);
+  input.addEventListener('blur', updateVisibility);
+
+  function cycle() {
+    // Slide current text out to the left
+    textEl.classList.add('slide-out');
+
+    setTimeout(function() {
+      // Move to next phrase
+      index = (index + 1) % phrases.length;
+      textEl.textContent = phrases[index];
+
+      // Position offscreen right (no transition)
+      textEl.classList.remove('slide-out');
+      textEl.classList.add('slide-in-prep');
+
+      // Force reflow so the browser registers the position change
+      void textEl.offsetWidth;
+
+      // Slide in from right
+      textEl.classList.remove('slide-in-prep');
+      textEl.classList.add('slide-in');
+
+      setTimeout(function() {
+        textEl.classList.remove('slide-in');
+      }, 500);
+    }, 500);
+  }
+
+  intervalId = setInterval(cycle, 5000);
+
+  // Pause cycling when input has focus and user is typing
+  input.addEventListener('focus', function() {
+    clearInterval(intervalId);
+  });
+  input.addEventListener('blur', function() {
+    updateVisibility();
+    if (input.value.length === 0) {
+      intervalId = setInterval(cycle, 3000);
+    }
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   initSession();
   renderVibeTags();
@@ -2954,4 +3031,7 @@ document.addEventListener('DOMContentLoaded', function() {
       findBtn.click();
     }
   });
+
+  // Cycling placeholder for AI Agent vibe input
+  initCyclingPlaceholder();
 });
