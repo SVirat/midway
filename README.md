@@ -14,6 +14,12 @@
 
 ---
 
+![Build](https://img.shields.io/badge/build-passing-brightgreen)
+![Statements](https://img.shields.io/badge/coverage--statements-100%25-brightgreen)
+![Functions](https://img.shields.io/badge/coverage--functions-100%25-brightgreen)
+![Lines](https://img.shields.io/badge/coverage--lines-100%25-brightgreen)
+![Branches](https://img.shields.io/badge/coverage--branches-100%25-brightgreen)
+
 ## What is Midway?
 
 Midway helps groups of friends find the best place to meet. Enter everyone's starting locations, pick a vibe, and Midway calculates the fairest or most efficient midpoint, then shows real venues nearby with driving distances, ratings, and directions.
