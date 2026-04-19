@@ -14,11 +14,13 @@
 
 ---
 
+![Node.js](https://img.shields.io/badge/Node.js-18+-339933?logo=node.js&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-Postgres-3FCF8E?logo=supabase&logoColor=white)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen)
 ![Statements](https://img.shields.io/badge/coverage--statements-100%25-brightgreen)
 ![Functions](https://img.shields.io/badge/coverage--functions-100%25-brightgreen)
 ![Lines](https://img.shields.io/badge/coverage--lines-100%25-brightgreen)
-![Branches](https://img.shields.io/badge/coverage--branches-100%25-brightgreen)
 
 ## What is Midway?
 
